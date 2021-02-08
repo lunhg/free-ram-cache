@@ -37,7 +37,7 @@ show_version() {
 #See https://stackoverflow.com/questions/402377/using-getopts-to-process-long-and-short-command-line-options
 #########
 
-TEMP=`getopt -o vhc:s --long version,help,cache:,swap -n 'free-ram' -- "$@"`
+TEMP=`getopt -o vhc:s --long version,help,cache:,swap -n 'free-ram-cache' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
