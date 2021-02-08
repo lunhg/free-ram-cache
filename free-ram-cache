@@ -1,0 +1,85 @@
+#!/bin/env bash
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+print_help() {
+    echo "Free ram space"
+    echo "Usage: free-ram [OPTIONS, [ARGS]] <file>"
+    echo ""
+    echo "Options"
+    echo ""
+    echo "-h | --help                show this message"
+    echo "-v | --version             show version"
+    echo "-c | --cache=[ARG]         clear ram cache"
+    echo "                           ("
+    echo "                             1=page-cache;"
+    echo "                             2=dentries and inodes;"
+    echo "                             3=page-cache, dentries and inodes"
+    echo "                           )"
+    echo "-s | --swap                clear swap"
+    $1; exit -1;
+}
+
+show_version() {
+    echo "0.0.1"
+}
+
+#########
+#See https://stackoverflow.com/questions/402377/using-getopts-to-process-long-and-short-command-line-options
+#########
+
+TEMP=`getopt -o vhc:s --long version,help,cache:,swap -n 'free-ram' -- "$@"`
+
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
+
+CACHE_OPTION=1
+SWAP_OPTION=0
+
+while true; do
+    case "$1" in
+        -v | --version ) show_version      ; exit 0  ;;
+        -h | --help )    print_help        ; exit 0  ;;
+        -p | --cache)    CACHE_OPTION="$2" ; shift 2 ;;
+        -l | --swap )    SWAP=1            ; shift 1 ;;
+        --             ) shift             ; break   ;;
+        *              )                     break   ;;
+    esac
+done
+
+# https://www.tecmint.com/clear-ram-memory-cache-buffer-and-swap-space-on-linux/
+SCRIPT_CACHE="echo $CACHE_OPTION > '/proc/sys/vm/drop_caches'"
+
+if [ $CACHE_OPTION -eq 1 ]; then
+    echo "Cleaning page cache..."
+fi
+
+if [ $CACHE_OPTION -eq 2 ]; then
+    echo "Cleaning dentries and inode..."
+fi
+
+if [ $CACHE_OPTION -eq 3 ]; then
+    echo "Cleaning page cache, dentries and inodes..."
+fi
+
+if [ $SWAP_OPTION -eq 1 ]; then
+    echo "Cleaning swap ram..."
+    su -c "$SCRIPT_CACHE && swapoff -a && swapon -a" root
+fi
+
+if [ $SWAP_OPTION -eq 0 ]; then
+    su -c "$SCRIPT_CACHE" root;
+fi
+
+echo "Check with free -h"
